@@ -60,6 +60,10 @@
   .topbar .spacer{flex:1}
   .toggle{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);cursor:pointer;user-select:none}
   .toggle input{accent-color:var(--accent)}
+  .modelsel{background:rgba(255,255,255,.04);color:var(--ink);border:1px solid var(--edge);border-radius:999px;
+    padding:4px 10px;font-size:12px;font-family:var(--sans);cursor:pointer;outline:none;max-width:190px}
+  .modelsel:hover{border-color:var(--edge2)}
+  .modelsel option{background:#141830;color:var(--ink)}
 
   #feed{flex:1;overflow-y:auto;scroll-behavior:smooth}
   .thread{max-width:780px;margin:0 auto;padding:26px 20px 40px}
@@ -183,7 +187,7 @@
     <div class="topbar">
       <button class="hamb" id="hamb">☰</button>
       <span class="ttl" id="ttl">New chat</span>
-      <span class="badge" id="modelbadge">Qwen 2.5</span>
+      <select class="modelsel" id="modelSel" title="Pick any model you've installed"></select>
       <span class="spacer"></span>
       <button class="livebtn" id="liveBtn" title="Hands-free voice conversation">🎧 Live</button>
       <label class="toggle" title="Read replies aloud automatically"><input type="checkbox" id="autospeak"> 🔊 auto-speak</label>
@@ -214,7 +218,7 @@ const feed=$("#feed"), input=$("#input"), send=$("#send"), sblist=$("#sblist");
 const previews=$("#previews"), composer=$("#composer");
 const KEY="qwen_chats_v2";
 let chats=load(), currentId=null, controller=null, pending=[], caps={voice_input:false};
-let speakingBtn=null;
+let speakingBtn=null, selectedModel="";
 
 const EXAMPLES=[
   {k:"👁️ See an image",d:"Attach a photo and ask about it",p:""},
@@ -259,7 +263,7 @@ function renderThread(){
 function renderWelcome(){
   const w=document.createElement("div"); w.className="welcome";
   w.innerHTML=`<div class="big"></div><h1>How can I help you today?</h1>
-    <p>A multimodal AI running privately on your Mac. It can read, <b>see images</b>, <b>speak</b>, and <b>listen</b> — all offline.</p>
+    <p>A multimodal AI running privately on your own device. It can read, <b>see images</b>, <b>speak</b>, and <b>listen</b> — all 100% offline.</p>
     <div class="caps" id="capsrow"></div><div class="cards"></div>`;
   const cards=w.querySelector(".cards");
   EXAMPLES.forEach(ex=>{ const el=document.createElement("div"); el.className="card";
@@ -328,8 +332,8 @@ async function sendMsg(){
   try{
     const out=c.messages.map(m=>({role:m.role,content:m.content,...(m.images?{images:m.images}:{})}));
     const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({messages:out}),signal:controller.signal});
-    $("#modelbadge").textContent = res.headers.get("X-Model")||"Qwen";
+      body:JSON.stringify({messages:out, model:selectedModel}),signal:controller.signal});
+    const used=res.headers.get("X-Model"); if(used) $("#footmodel").textContent=used+" · on your device";
     const reader=res.body.getReader(), dec=new TextDecoder(); let buf="",stats=null,stick=true;
     feed.onscroll=()=>{ stick=feed.scrollTop+feed.clientHeight>=feed.scrollHeight-40; };
     while(true){ const {done,value}=await reader.read(); if(done)break;
@@ -416,16 +420,25 @@ $("#backdrop").onclick=closeSb;
 function closeSb(){ $("#sidebar").classList.remove("open"); $("#backdrop").classList.remove("show"); }
 
 fetch("/capabilities").then(r=>r.json()).then(c=>{ caps=c;
-  $("#footmodel").textContent=`${c.text_model} + vision · on your Mac`;
   if(!c.voice_input) $("#mic").style.opacity=".5";
-  if(!current()) renderWelcome();
+  if(!current()) renderThread();   // re-render welcome with correct capability chips (clears first)
 }).catch(()=>{});
+selectedModel=localStorage.getItem("local_ai_model")||"";
+fetch("/models").then(r=>r.json()).then(m=>{
+  const sel=$("#modelSel"); sel.innerHTML="";
+  const list=m.models&&m.models.length?m.models:[m.default];
+  list.forEach(n=>{ const o=document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o); });
+  if(!selectedModel||!list.includes(selectedModel)) selectedModel=m.default;
+  sel.value=selectedModel; $("#footmodel").textContent=selectedModel+" · on your device";
+  sel.onchange=()=>{ selectedModel=sel.value; localStorage.setItem("local_ai_model",selectedModel);
+    $("#footmodel").textContent=selectedModel+" · on your device"; };
+}).catch(()=>{ $("#modelSel").innerHTML='<option>model</option>'; });
 renderSidebar(); renderThread();
 
 /* ---------- shared streaming helper ---------- */
 async function streamChat(outMessages, onToken, signal){
   const res=await fetch("/chat",{method:"POST",headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({messages:outMessages}),signal});
+    body:JSON.stringify({messages:outMessages, model:selectedModel}),signal});
   const model=res.headers.get("X-Model")||"Qwen";
   const reader=res.body.getReader(), dec=new TextDecoder(); let buf="",full="",stats=null;
   while(true){ const {done,value}=await reader.read(); if(done)break;

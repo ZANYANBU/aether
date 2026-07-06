@@ -1,21 +1,19 @@
 """
-Local multimodal chat server for Qwen on Ollama — text, vision, and voice.
+A private, 100% local AI chat server — works with ANY Ollama model.
 
-  python3 chat_server.py            # text + vision + talk-back (voice output)
+  python3 chat_server.py            # text + vision + talk-back
   .venv/bin/python chat_server.py   # ^ plus voice input (local Whisper)
 
-Everything runs on your machine:
-  * text replies  -> qwen2.5:7b        (via Ollama, port 11434)
-  * image replies -> qwen2.5vl:3b      (auto-selected when a photo is attached)
-  * speech -> text -> local Whisper    (only if faster-whisper is installed)
-  * text -> speech -> your browser's built-in local voices (no server needed)
+Nothing leaves your machine. This tiny stdlib server:
+  * lists whatever models you have installed (GET /models)
+  * proxies chat to Ollama, streaming tokens straight to the browser
+  * auto-routes to a vision model when you attach an image
+  * (optionally) transcribes speech on-device with faster-whisper
 
-This server itself has ZERO required dependencies (Python stdlib). Voice INPUT
-is an optional bonus: install it with `pip install faster-whisper` and run the
-server with the venv Python.
+The core server has ZERO required dependencies. Voice input is an optional
+bonus: `pip install faster-whisper` and run with the venv Python.
 """
 
-import io
 import json
 import tempfile
 import urllib.request
@@ -23,9 +21,11 @@ import http.server
 import socketserver
 
 PORT = 8100
-MODEL_TEXT = "qwen2.5:7b"       # smart text model
-MODEL_VISION = "qwen2.5vl:3b"   # can see images (also handles text)
-OLLAMA = "http://localhost:11434/api/chat"
+DEFAULT_MODEL = "qwen2.5:7b"    # used if the browser hasn't picked one yet
+VISION_MODEL = "qwen2.5vl:3b"   # auto-used when an image is attached
+OLLAMA = "http://localhost:11434"
+
+VISION_HINTS = ("vl", "llava", "vision", "moondream", "bakllava", "minicpm-v", "llama3.2-vision")
 
 # ---- optional local speech-to-text (Whisper) -----------------------------
 try:
@@ -42,15 +42,24 @@ except Exception:
     VOICE_INPUT = False
 
 
-def has_image(messages):
-    return any(m.get("images") for m in messages)
+def is_vision(name):
+    return any(h in name.lower() for h in VISION_HINTS)
+
+
+def pick_model(chosen, messages):
+    """Honor the user's choice; switch to a vision model only when needed."""
+    model = chosen or DEFAULT_MODEL
+    if any(m.get("images") for m in messages) and not is_vision(model):
+        return VISION_MODEL
+    return model
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
+        if self.path == "/models":
+            return self._models()
         if self.path == "/capabilities":
-            return self._json({"voice_input": VOICE_INPUT,
-                               "text_model": MODEL_TEXT, "vision_model": MODEL_VISION})
+            return self._json({"voice_input": VOICE_INPUT, "default": DEFAULT_MODEL})
         if self.path in ("/", "/index.html"):
             self.path = "/index.html"
         return super().do_GET()
@@ -62,16 +71,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._transcribe()
         self.send_error(404)
 
-    # ---- chat: proxy to Ollama, pick model by whether an image is present --
+    # ---- list installed Ollama models -------------------------------------
+    def _models(self):
+        try:
+            with urllib.request.urlopen(OLLAMA + "/api/tags", timeout=5) as r:
+                tags = json.load(r).get("models", [])
+            names = sorted(m["name"] for m in tags)
+        except Exception:
+            names = []
+        default = DEFAULT_MODEL if DEFAULT_MODEL in names else (names[0] if names else DEFAULT_MODEL)
+        self._json({"models": names, "default": default, "vision_model": VISION_MODEL})
+
+    # ---- chat: stream from Ollama, model chosen by the client -------------
     def _chat(self):
         body = self._read_json()
         messages = body.get("messages", [])
-        model = MODEL_VISION if has_image(messages) else MODEL_TEXT
+        model = pick_model(body.get("model"), messages)
         payload = json.dumps({
             "model": model, "messages": messages, "stream": True,
             "options": {"temperature": body.get("temperature", 0.7)},
         }).encode()
-        req = urllib.request.Request(OLLAMA, data=payload,
+        req = urllib.request.Request(OLLAMA + "/api/chat", data=payload,
                                      headers={"Content-Type": "application/json"})
         try:
             upstream = urllib.request.urlopen(req)
@@ -122,6 +142,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer):
 
 if __name__ == "__main__":
     v = "ON (local Whisper)" if VOICE_INPUT else "off (pip install faster-whisper to enable)"
-    print(f"\n  Qwen multimodal chat -> http://localhost:{PORT}")
-    print(f"  text: {MODEL_TEXT}   vision: {MODEL_VISION}   voice-input: {v}\n")
+    print(f"\n  Local AI chat -> http://localhost:{PORT}")
+    print(f"  default model: {DEFAULT_MODEL}   vision: {VISION_MODEL}   voice-input: {v}")
+    print("  (pick any installed model from the dropdown in the UI)\n")
     Server(("", PORT), Handler).serve_forever()
