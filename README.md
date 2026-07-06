@@ -1,4 +1,6 @@
-# 🔒 Local AI Chat — private, offline, for everyone
+# ✦ Aether — private, local AI for everyone
+
+*Like the invisible medium once thought to fill all of space — an intelligence that runs quietly, everywhere, on your own machine.*
 
 A clean, friendly chat interface for running AI **entirely on your own computer**.
 No cloud. No API keys. No sign-up. No data collection. **Nothing you type, say, or
@@ -86,8 +88,8 @@ ollama pull qwen2.5vl:3b    # lets it "see" photos (~3.2 GB)
 ### 3. Download this app and run it
 
 ```bash
-git clone https://github.com/ZANYANBU/qwen-m1-chat.git
-cd qwen-m1-chat
+git clone https://github.com/ZANYANBU/aether.git
+cd aether
 python3 chat_server.py
 ```
 

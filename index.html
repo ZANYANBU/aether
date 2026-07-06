@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Qwen — local AI chat</title>
+<title>Aether — private, local AI</title>
 <style>
   :root{
     --bg0:#04050c; --bg1:#0a0c18;
@@ -166,7 +166,7 @@
   <aside class="sidebar" id="sidebar">
     <div class="sb-top">
       <div class="brand"><span class="orb"></span>
-        <div><b>Qwen&nbsp;Chat</b><br><span>local · sees · speaks · listens</span></div></div>
+        <div><b>Aether</b><br><span>local · sees · speaks · listens</span></div></div>
       <button class="newchat" id="newchat">＋ New chat</button>
     </div>
     <div class="sb-list" id="sblist"></div>
@@ -277,8 +277,8 @@ function renderWelcome(){
 }
 function addRow(role,text,thread,imgUrls){
   const row=document.createElement("div"); row.className="row "+(role==="user"?"user":"bot");
-  row.innerHTML=`<div class="av">${role==="user"?"You":"Q"}</div>
-    <div class="body"><div class="name">${role==="user"?"You":"Qwen"}</div>
+  row.innerHTML=`<div class="av">${role==="user"?"You":"✦"}</div>
+    <div class="body"><div class="name">${role==="user"?"You":"Aether"}</div>
     ${imgUrls&&imgUrls.length?`<div class="msg-imgs">${imgUrls.map(u=>`<img src="${u}">`).join("")}</div>`:""}
     <div class="bubble"></div></div>`;
   row.querySelector(".bubble").innerHTML=render(text);
