@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .DS_Store
 *.log
+.venv/
+index_shot.html
+index_live.html

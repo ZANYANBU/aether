@@ -1,16 +1,21 @@
-# Qwen 2.5 7B — Local Chat on a Mac 🖥️⚡
+# Qwen — Local Multimodal AI on a Mac 🖥️⚡👁️🎙️
 
-A tiny, dependency-free chat UI for running the **Qwen 2.5 7B** language model
-**100% locally** on Apple Silicon — no cloud, no API key, no telemetry. Every
+A private, offline AI assistant that **sees, speaks, and listens** — running
+**100% locally** on Apple Silicon. No cloud, no API key, no telemetry. Every
 token is generated on your Mac's own GPU.
 
-Built as a "how far can an 8 GB M1 MacBook Air actually push a 7-billion-parameter
-model?" experiment. The answer: surprisingly far. The UI shows a live
-**tokens/sec meter** so you can watch your machine work.
+It started as "how far can an 8 GB M1 MacBook Air push a 7-billion-parameter
+model?" and grew into a full ChatGPT-style app with **image understanding** and
+a **Gemini-style hands-free voice mode** — all on-device.
+
+![Live voice mode](docs/live.png)
+
+> **🎧 Live mode** — just talk. It detects when you stop, thinks, and speaks back,
+> sentence-by-sentence, then listens again. Talk over it to interrupt.
 
 ![Qwen Chat welcome screen](docs/screenshot.png)
 
-> A real conversation — streaming replies, code blocks, and saved history, all offline:
+> Streaming replies, code blocks, and saved history — all offline:
 
 ![Qwen Chat in action](docs/chat.png)
 
@@ -18,17 +23,16 @@ model?" experiment. The answer: surprisingly far. The UI shows a live
 
 ## ✨ Features
 
-- **ChatGPT-style interface** — clean, familiar, and easy for anyone to use
-- **Animated dark-space theme** — twinkling starfield + shooting stars
-- **Saved chat history** — conversations persist in your browser (localStorage); switch between them in the sidebar
-- **Fully local & offline** — runs on [Ollama](https://ollama.com); nothing leaves your machine
-- **Streaming replies** — tokens render live as the model types, with a **Stop** button
-- **Live tok/s meter** — see exactly how fast your hardware is
-- **Multi-turn memory** — real back-and-forth conversation
-- **Code blocks with one-click copy** + markdown rendering
-- **Mobile-friendly** — collapsible sidebar
-- **Zero Python dependencies** — the server is ~90 lines of Python standard library
-- **One HTML file** — no build step, no npm, no framework
+- **🧠 Smart text** — Qwen 2.5 7B for chat, code, and reasoning
+- **👁️ Vision** — attach, paste, or drag in an image and ask about it (auto-routes to Qwen 2.5-VL)
+- **🎧 Live voice mode** — hands-free conversation with voice-activity detection, streaming talk-back, auto-listen loop, and barge-in (Gemini Live-style)
+- **🔊 Talk-back** — read any reply aloud with your Mac's built-in voices (one tap, or auto-speak)
+- **🎙️ Voice input** — speech transcribed **on-device** by local Whisper (optional add-on)
+- **ChatGPT-style interface** with an animated dark-space starfield theme
+- **Saved chat history** — conversations persist in your browser; switch in the sidebar
+- **Streaming replies** with a **Stop** button + live **tok/s meter**
+- **Code blocks with one-click copy** + markdown rendering, mobile-friendly
+- **Core server has zero dependencies** (Python stdlib); voice input is one optional `pip install`
 
 ---
 
@@ -36,7 +40,7 @@ model?" experiment. The answer: surprisingly far. The UI shows a live
 
 - **Apple Silicon Mac** (M1/M2/M3/M4). Works on Intel/Linux too, just slower.
 - **~8 GB RAM minimum** (16 GB+ is comfier).
-- **~5 GB free disk** for the model.
+- **~8 GB free disk** (text model 4.7 GB + vision model 3.2 GB).
 - **Python 3** (ships with macOS).
 - **[Ollama](https://ollama.com)** (install command below).
 
@@ -44,26 +48,21 @@ model?" experiment. The answer: surprisingly far. The UI shows a live
 
 ## 🚀 Setup
 
-**1. Install Ollama**
+**1. Install Ollama, then start it**
 
 ```bash
-brew install ollama
-# or download the app from https://ollama.com/download
+brew install ollama      # or download from https://ollama.com/download
+ollama serve             # leave running in its own terminal
 ```
 
-**2. Start the Ollama server** (leave it running in its own terminal)
+**2. Pull the models** (one-time download)
 
 ```bash
-ollama serve
+ollama pull qwen2.5:7b     # text  (~4.7 GB)
+ollama pull qwen2.5vl:3b   # vision (~3.2 GB) — needed for image understanding
 ```
 
-**3. Pull the model** (~4.7 GB, one-time download)
-
-```bash
-ollama pull qwen2.5:7b
-```
-
-**4. Clone this repo and start the chat server**
+**3. Clone and run**
 
 ```bash
 git clone https://github.com/ZANYANBU/qwen-m1-chat.git
@@ -71,26 +70,40 @@ cd qwen-m1-chat
 python3 chat_server.py
 ```
 
-Then open **http://localhost:8100** in your browser. That's it. 🎉
+Open **http://localhost:8100**. You now have text, vision, and talk-back. 🎉
 
-> The **first** reply is slower — that's the model loading into RAM. After that it stays warm.
+**4. (Optional) Enable voice input** — local speech-to-text with Whisper:
+
+```bash
+python3 -m venv .venv
+.venv/bin/pip install faster-whisper
+.venv/bin/python chat_server.py     # run with the venv to unlock the 🎙️ mic + 🎧 Live mode
+```
+
+> The **first** reply after a mode switch is slower — that's a model loading into RAM.
+> On 8 GB, the text and vision models take turns in memory (Ollama swaps them automatically).
 
 ---
 
 ## 🧩 How it works
 
 ```
-  ┌──────────────┐   POST /chat    ┌───────────────┐   /api/chat    ┌──────────────┐
-  │   Browser    │ ──────────────▶ │ chat_server.py│ ─────────────▶ │    Ollama    │
-  │ (index.html) │ ◀────────────── │ (stdlib proxy)│ ◀───────────── │  Qwen 2.5 7B │
-  └──────────────┘  streamed NDJSON └───────────────┘  streamed tokens└──────────────┘
-        :8100                            :8100                            :11434
+                                              ┌──────────── Ollama (:11434) ──────────┐
+  ┌──────────────┐   POST /chat    ┌────────────────┐   text  →  qwen2.5:7b           │
+  │   Browser    │ ──────────────▶ │  chat_server.py │ ─────────▶ image → qwen2.5vl:3b │
+  │ (index.html) │ ◀────────────── │  (stdlib proxy) │ ◀───────── streamed tokens      │
+  └──────────────┘  streamed NDJSON└────────┬───────┘         └───────────────────────┘
+     │        ▲                     POST /transcribe
+     │        │                     ┌────────┴────────┐
+   🎙️ mic ───┼────── audio ───────▶│  local Whisper  │ (optional, on-device)
+   🔊 speaker◀── system voices      └─────────────────┘
+     (browser speechSynthesis, fully local)
 ```
 
-Ollama serves the model on port `11434`. `chat_server.py` does two small jobs:
-serve the HTML page, and proxy chat requests to Ollama — **streaming tokens
-straight through** so the browser can render them as they're generated. The
-proxy also sidesteps browser CORS restrictions on the Ollama port.
+`chat_server.py` serves the page and proxies to Ollama, **picking the vision model
+automatically when an image is attached** and streaming tokens straight through.
+Speech-to-text runs through a local Whisper endpoint; text-to-speech uses your
+browser's built-in local voices. Nothing ever leaves your Mac.
 
 ---
 
@@ -98,8 +111,8 @@ proxy also sidesteps browser CORS restrictions on the Ollama port.
 
 | File | What it does |
 |------|--------------|
-| [`chat_server.py`](chat_server.py) | ~90-line Python stdlib server: serves the page + streams Ollama responses |
-| [`index.html`](index.html) | The entire chat UI — HTML, CSS, and vanilla JS in one file |
+| [`chat_server.py`](chat_server.py) | Python stdlib server: serves the page, routes text vs. vision to Ollama, and (optionally) transcribes audio with local Whisper |
+| [`index.html`](index.html) | The entire UI — chat, vision, voice, and Live mode — in one file of HTML/CSS/vanilla JS |
 | [`run.sh`](run.sh) | Convenience script: checks Ollama, pulls the model if needed, starts the server |
 | `README.md` | This file |
 
@@ -107,17 +120,21 @@ proxy also sidesteps browser CORS restrictions on the Ollama port.
 
 ## 🔧 Customize
 
-**Use a different / smaller model** — edit the `MODEL` line in `chat_server.py`:
+**Swap models** — edit the top of `chat_server.py`:
 
 ```python
-MODEL = "qwen2.5:7b"     # try "qwen2.5:3b" (faster) or "llama3.1:8b"
+MODEL_TEXT   = "qwen2.5:7b"     # try "qwen2.5:3b" (faster) or "llama3.1:8b"
+MODEL_VISION = "qwen2.5vl:3b"   # or "llava:7b", "moondream"
 ```
 
-then `ollama pull <that-model>` and restart the server.
+then `ollama pull <that-model>` and restart.
 
-**Change creativity** — the `temperature` option is in `chat_server.py` (0 = focused, 1 = creative).
+**Change creativity** — the `temperature` option in `chat_server.py` (0 = focused, 1 = creative).
 
 **Change the port** — edit `PORT` in `chat_server.py` (default `8100`).
+
+**Voice quality** — Whisper uses `base.en` by default (fast). For better accuracy edit
+`WhisperModel("base.en", ...)` to `"small.en"` in `chat_server.py`.
 
 ---
 
@@ -126,9 +143,12 @@ then `ollama pull <that-model>` and restart the server.
 | Problem | Fix |
 |---------|-----|
 | `Ollama not reachable` | Run `ollama serve` in a separate terminal first. |
-| Model replies very slowly / Mac fans spin | Normal on 8 GB — a 7B model sits near the RAM ceiling. Try `qwen2.5:3b` for a snappier feel. |
+| Mic / 🎧 Live does nothing | Voice input needs Whisper. Run the server with the venv: `.venv/bin/python chat_server.py` (see setup step 4). |
+| Image gives an error | Pull the vision model: `ollama pull qwen2.5vl:3b`. |
+| Replies slow / fans spin | Normal on 8 GB — the model sits near the RAM ceiling. Try `qwen2.5:3b` for a snappier feel. |
+| Live mode interrupts itself | It's hearing its own voice. Use headphones, or lower your speaker volume. |
 | `address already in use` | Something's on port 8100. Change `PORT` in `chat_server.py`. |
-| First reply hangs for ~30s | The model is loading into memory. Only happens once per session. |
+| First reply after switching modes hangs | A model is loading into RAM. Happens once per mode; on 8 GB the two models swap. |
 
 ---
 

@@ -3,7 +3,8 @@
 # Checks Ollama is installed + running, pulls the model if missing, starts the UI.
 set -e
 
-MODEL="qwen2.5:7b"
+MODEL_TEXT="qwen2.5:7b"
+MODEL_VISION="qwen2.5vl:3b"
 PORT="8100"
 
 if ! command -v ollama >/dev/null 2>&1; then
@@ -18,11 +19,16 @@ if ! curl -s http://localhost:11434/api/version >/dev/null 2>&1; then
   until curl -s http://localhost:11434/api/version >/dev/null 2>&1; do sleep 1; done
 fi
 
-# Pull the model if we don't have it yet.
-if ! ollama list | grep -q "${MODEL%%:*}"; then
-  echo "⬇ pulling ${MODEL} (~4.7 GB, one time)..."
-  ollama pull "$MODEL"
-fi
+# Pull the models if we don't have them yet.
+for m in "$MODEL_TEXT" "$MODEL_VISION"; do
+  if ! ollama list | grep -q "${m%%:*}"; then
+    echo "⬇ pulling ${m} (one time)..."
+    ollama pull "$m"
+  fi
+done
+
+# Use the venv Python if it exists (enables local Whisper voice input), else system python3.
+PY="python3"; [ -x ".venv/bin/python" ] && PY=".venv/bin/python"
 
 echo "✅ ready — open http://localhost:${PORT}"
-python3 chat_server.py
+"$PY" chat_server.py
