@@ -8,6 +8,12 @@ Built as a "how far can an 8 GB M1 MacBook Air actually push a 7-billion-paramet
 model?" experiment. The answer: surprisingly far. The UI shows a live
 **tokens/sec meter** so you can watch your machine work.
 
+![Qwen Chat welcome screen](docs/screenshot.png)
+
+> A real conversation — streaming replies, code blocks, and saved history, all offline:
+
+![Qwen Chat in action](docs/chat.png)
+
 ---
 
 ## ✨ Features
