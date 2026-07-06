@@ -3,207 +3,414 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Qwen 2.5 7B — local chat</title>
+<title>Qwen — local AI chat</title>
 <style>
   :root{
-    --bg:#0f1117; --panel:#171a23; --edge:#262b38; --ink:#e7ebf3; --dim:#93a0b8;
-    --me:#20304d; --accent:#7aa2ff; --accent2:#5effc4; --code:#0b0e15;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    --bg0:#04050c; --bg1:#0a0c18;
+    --panel:rgba(16,19,38,.72); --panel2:rgba(24,28,52,.55);
+    --edge:rgba(255,255,255,.09); --edge2:rgba(255,255,255,.16);
+    --ink:#eef1fb; --dim:#95a1c4; --faint:#5f6a8a;
+    --accent:#8b7bff; --accent2:#4fd8ff; --glow:rgba(139,123,255,.5);
+    --user1:#5b4bd6; --user2:#7a5cff;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,sans-serif;
     --mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace;
+    --sb:280px;
   }
   *{box-sizing:border-box}
-  html,body{margin:0;height:100%}
-  body{background:var(--bg); color:var(--ink); font-family:var(--sans);
-    display:flex; flex-direction:column; height:100vh}
-  header{display:flex; align-items:center; gap:12px; padding:12px 18px;
-    border-bottom:1px solid var(--edge); background:var(--panel)}
-  .dot{width:9px;height:9px;border-radius:50%;background:var(--accent2);
-    box-shadow:0 0 10px var(--accent2)}
-  header h1{font-size:15px; margin:0; font-weight:600}
-  header .meta{color:var(--dim); font-size:12px}
-  header .spacer{flex:1}
-  header button{background:transparent; color:var(--dim); border:1px solid var(--edge);
-    border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; font-family:var(--sans)}
-  header button:hover{color:var(--ink); border-color:var(--accent)}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{
+    font-family:var(--sans); color:var(--ink);
+    background:
+      radial-gradient(1000px 600px at 12% -10%, rgba(123,92,255,.22), transparent 60%),
+      radial-gradient(900px 700px at 110% 10%, rgba(79,216,255,.14), transparent 55%),
+      radial-gradient(700px 700px at 50% 120%, rgba(139,123,255,.12), transparent 60%),
+      linear-gradient(180deg,var(--bg1),var(--bg0));
+  }
+  #stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .app{position:relative;z-index:1;display:flex;height:100vh}
 
-  #feed{flex:1; overflow-y:auto; padding:24px 0}
-  .msg{max-width:760px; margin:0 auto 20px; padding:0 20px; display:flex; gap:12px}
-  .avatar{width:28px;height:28px;border-radius:7px;flex:none;font-size:13px;
-    display:flex;align-items:center;justify-content:center;font-weight:700}
-  .user .avatar{background:var(--me); color:var(--accent)}
-  .bot .avatar{background:#10261e; color:var(--accent2)}
-  .bubble{padding-top:3px; line-height:1.6; font-size:15px; overflow-wrap:anywhere}
-  .role{font-size:12px; color:var(--dim); margin-bottom:3px}
-  .bubble p{margin:0 0 10px}
-  .bubble pre{background:var(--code); border:1px solid var(--edge); border-radius:10px;
-    padding:12px 14px; overflow-x:auto; font-family:var(--mono); font-size:13px; margin:8px 0}
-  .bubble code{font-family:var(--mono); font-size:13px; background:#0b0e15;
-    padding:1px 5px; border-radius:5px}
-  .bubble pre code{background:none; padding:0}
-  .cursor{display:inline-block;width:8px;height:15px;background:var(--accent2);
-    vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  /* ---------- sidebar ---------- */
+  .sidebar{width:var(--sb);flex:none;display:flex;flex-direction:column;
+    background:var(--panel);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+    border-right:1px solid var(--edge);transition:margin-left .25s ease}
+  .sb-top{padding:14px 12px 10px}
+  .brand{display:flex;align-items:center;gap:9px;padding:4px 6px 12px}
+  .brand .orb{width:24px;height:24px;border-radius:50%;
+    background:radial-gradient(circle at 32% 30%,#cbb8ff,var(--accent) 55%,#3b2b8a);
+    box-shadow:0 0 14px var(--glow)}
+  .brand b{font-size:15px;font-weight:600;letter-spacing:.2px}
+  .brand span{font-size:11px;color:var(--dim)}
+  .newchat{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;
+    background:linear-gradient(135deg,var(--user1),var(--user2));color:#fff;border:none;
+    padding:11px;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;
+    font-family:var(--sans);box-shadow:0 4px 18px rgba(123,92,255,.35)}
+  .newchat:hover{filter:brightness(1.08)}
+  .sb-list{flex:1;overflow-y:auto;padding:8px 8px 8px;display:flex;flex-direction:column;gap:2px}
+  .sb-cat{font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.6px;
+    padding:10px 10px 5px}
+  .chatitem{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:9px;
+    cursor:pointer;color:var(--dim);font-size:13.5px;position:relative}
+  .chatitem:hover{background:var(--panel2);color:var(--ink)}
+  .chatitem.active{background:var(--panel2);color:var(--ink)}
+  .chatitem .ic{opacity:.6;flex:none}
+  .chatitem .tt{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chatitem .del{opacity:0;border:none;background:none;color:var(--faint);cursor:pointer;
+    font-size:15px;padding:2px 4px;border-radius:6px;flex:none}
+  .chatitem:hover .del{opacity:1}
+  .chatitem .del:hover{color:#ff7a8a;background:rgba(255,122,138,.12)}
+  .sb-foot{padding:12px 16px;border-top:1px solid var(--edge);font-size:11px;color:var(--faint);
+    display:flex;align-items:center;gap:8px}
+  .sb-foot .dot{width:7px;height:7px;border-radius:50%;background:var(--accent2);
+    box-shadow:0 0 8px var(--accent2);flex:none}
+
+  /* ---------- main ---------- */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0}
+  .topbar{display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--edge);
+    background:rgba(10,12,24,.35);backdrop-filter:blur(10px)}
+  .hamb{display:none;background:none;border:none;color:var(--ink);font-size:20px;cursor:pointer}
+  .topbar .ttl{font-size:14px;font-weight:600}
+  .topbar .badge{font-size:11px;color:var(--dim);border:1px solid var(--edge);
+    padding:3px 9px;border-radius:999px}
+  .topbar .spacer{flex:1}
+
+  #feed{flex:1;overflow-y:auto;scroll-behavior:smooth}
+  .thread{max-width:780px;margin:0 auto;padding:26px 20px 40px}
+  .row{display:flex;gap:13px;margin-bottom:22px}
+  .row.user{flex-direction:row-reverse}
+  .av{width:30px;height:30px;border-radius:9px;flex:none;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:700}
+  .user .av{background:linear-gradient(135deg,var(--user1),var(--user2));color:#fff}
+  .bot .av{background:radial-gradient(circle at 32% 30%,#bff6ff,#2aa7c9 60%,#155);color:#012}
+  .body{min-width:0;max-width:calc(100% - 46px)}
+  .name{font-size:11.5px;color:var(--dim);margin:3px 0 4px}
+  .user .name{text-align:right}
+  .bubble{line-height:1.65;font-size:15.5px;overflow-wrap:anywhere}
+  .user .bubble{background:linear-gradient(135deg,var(--user1),var(--user2));color:#fff;
+    padding:11px 15px;border-radius:16px 16px 4px 16px;display:inline-block;
+    box-shadow:0 4px 16px rgba(90,70,200,.3)}
+  .bot .bubble{color:var(--ink)}
+  .bubble p{margin:0 0 11px}.bubble p:last-child{margin-bottom:0}
+  .bubble pre{background:#080a14;border:1px solid var(--edge);border-radius:11px;
+    padding:12px 14px;overflow-x:auto;font-family:var(--mono);font-size:13px;margin:9px 0;position:relative}
+  .bubble code{font-family:var(--mono);font-size:13px;background:rgba(255,255,255,.08);
+    padding:1px 6px;border-radius:6px}
+  .bubble pre code{background:none;padding:0}
+  .copy{position:absolute;top:7px;right:7px;background:rgba(255,255,255,.08);border:1px solid var(--edge);
+    color:var(--dim);font-size:11px;padding:3px 8px;border-radius:7px;cursor:pointer;opacity:0;font-family:var(--sans)}
+  pre:hover .copy{opacity:1}.copy:hover{color:var(--ink)}
+  .cursor{display:inline-block;width:8px;height:16px;background:var(--accent2);
+    vertical-align:-3px;border-radius:2px;animation:blink 1s steps(1) infinite;box-shadow:0 0 8px var(--accent2)}
   @keyframes blink{50%{opacity:0}}
-  .stat{max-width:760px;margin:-10px auto 20px;padding:0 20px 0 52px;
-    color:var(--dim);font-size:11px;font-family:var(--mono)}
+  .stat{font-size:11px;color:var(--faint);font-family:var(--mono);margin-top:7px}
 
-  footer{border-top:1px solid var(--edge); background:var(--panel); padding:12px}
-  .composer{max-width:760px; margin:0 auto; display:flex; gap:10px; align-items:flex-end}
-  textarea{flex:1; resize:none; background:var(--bg); color:var(--ink);
-    border:1px solid var(--edge); border-radius:12px; padding:12px 14px;
-    font-family:var(--sans); font-size:15px; line-height:1.4; max-height:180px; outline:none}
-  textarea:focus{border-color:var(--accent)}
-  .send{background:var(--accent); color:#08122a; border:none; border-radius:12px;
-    width:44px; height:44px; font-size:18px; cursor:pointer; flex:none}
-  .send:disabled{opacity:.4; cursor:not-allowed}
-  .hint{max-width:760px;margin:6px auto 0;color:var(--dim);font-size:11px;text-align:center}
-  .empty{max-width:520px;margin:14vh auto;text-align:center;color:var(--dim)}
-  .empty h2{color:var(--ink);font-weight:600;font-size:20px;margin:0 0 8px}
-  .examples{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
-  .ex{background:var(--panel);border:1px solid var(--edge);color:var(--dim);
-    padding:8px 13px;border-radius:10px;font-size:13px;cursor:pointer}
-  .ex:hover{color:var(--ink);border-color:var(--accent)}
+  /* ---------- welcome ---------- */
+  .welcome{max-width:640px;margin:11vh auto 0;text-align:center;padding:0 20px}
+  .welcome .big{width:56px;height:56px;border-radius:50%;margin:0 auto 20px;
+    background:radial-gradient(circle at 32% 30%,#dcd0ff,var(--accent) 55%,#3b2b8a);
+    box-shadow:0 0 40px var(--glow)}
+  .welcome h1{font-size:25px;font-weight:600;margin:0 0 10px}
+  .welcome p{color:var(--dim);font-size:15px;margin:0 auto;max-width:440px;line-height:1.6}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-top:26px;text-align:left}
+  .card{background:var(--panel);border:1px solid var(--edge);border-radius:13px;padding:14px 15px;
+    cursor:pointer;transition:.15s}
+  .card:hover{border-color:var(--edge2);transform:translateY(-2px);background:var(--panel2)}
+  .card .k{font-size:14px;font-weight:600;margin-bottom:3px}
+  .card .d{font-size:12.5px;color:var(--dim)}
+
+  /* ---------- composer ---------- */
+  .composer-wrap{padding:12px 20px 20px;background:linear-gradient(180deg,transparent,var(--bg0) 40%)}
+  .composer{max-width:780px;margin:0 auto;display:flex;gap:10px;align-items:flex-end;
+    background:var(--panel);border:1px solid var(--edge2);border-radius:18px;padding:9px 9px 9px 16px;
+    backdrop-filter:blur(14px);box-shadow:0 8px 40px rgba(0,0,0,.4)}
+  .composer:focus-within{border-color:var(--accent)}
+  textarea{flex:1;resize:none;background:none;color:var(--ink);border:none;outline:none;
+    font-family:var(--sans);font-size:15.5px;line-height:1.45;max-height:200px;padding:6px 0}
+  textarea::placeholder{color:var(--faint)}
+  .send{width:40px;height:40px;flex:none;border:none;border-radius:12px;cursor:pointer;
+    background:linear-gradient(135deg,var(--user1),var(--user2));color:#fff;font-size:17px;
+    display:flex;align-items:center;justify-content:center}
+  .send:disabled{opacity:.35;cursor:not-allowed}
+  .send.stop{background:#3a2030;color:#ff8fa3}
+  .disclaimer{max-width:780px;margin:9px auto 0;text-align:center;font-size:11px;color:var(--faint)}
+
+  .backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:5}
+  @media(max-width:760px){
+    .sidebar{position:fixed;z-index:6;height:100%;margin-left:calc(-1 * var(--sb) - 2px)}
+    .sidebar.open{margin-left:0}
+    .backdrop.show{display:block}
+    .hamb{display:block}
+    .cards{grid-template-columns:1fr}
+  }
+  ::-webkit-scrollbar{width:9px}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:9px}
 </style>
 </head>
 <body>
-<header>
-  <span class="dot"></span>
-  <h1>Qwen 2.5 7B</h1>
-  <span class="meta">local · Apple M1 · 4-bit · via Ollama</span>
-  <span class="spacer"></span>
-  <button id="clear">New chat</button>
-</header>
+<canvas id="stars"></canvas>
 
-<div id="feed">
-  <div class="empty" id="empty">
-    <h2>Chatting with a 7-billion-parameter model on your laptop</h2>
-    <div>No cloud, no API key — every token is generated on your M1's GPU.</div>
-    <div class="examples" id="examples"></div>
-  </div>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-top">
+      <div class="brand"><span class="orb"></span>
+        <div><b>Qwen&nbsp;Chat</b><br><span>local · offline · private</span></div>
+      </div>
+      <button class="newchat" id="newchat">＋ New chat</button>
+    </div>
+    <div class="sb-list" id="sblist"></div>
+    <div class="sb-foot"><span class="dot"></span>Qwen 2.5 7B · running on your Mac</div>
+  </aside>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamb" id="hamb">☰</button>
+      <span class="ttl" id="ttl">New chat</span>
+      <span class="badge">Qwen 2.5 7B</span>
+      <span class="spacer"></span>
+      <span class="badge" title="No data leaves your machine">🔒 100% local</span>
+    </div>
+
+    <div id="feed"></div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="Ask anything… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button class="send" id="send" title="Send">↑</button>
+      </div>
+      <div class="disclaimer">Qwen runs entirely on your device. It can make mistakes — double-check important info.</div>
+    </div>
+  </main>
 </div>
-
-<footer>
-  <div class="composer">
-    <textarea id="input" rows="1" placeholder="Message Qwen…  (Enter to send, Shift+Enter for newline)"></textarea>
-    <button class="send" id="send" title="Send">↑</button>
-  </div>
-  <div class="hint">Runs entirely offline. First reply is slower while the model loads into memory.</div>
-</footer>
 
 <script>
 const $ = s => document.querySelector(s);
-const feed = $("#feed"), input = $("#input"), send = $("#send");
-const messages = [];   // full conversation history sent to the model each turn
+const feed = $("#feed"), input = $("#input"), send = $("#send"), sblist = $("#sblist");
+const KEY = "qwen_chats_v1";
+
+let chats = load();          // [{id,title,messages,updated}]
+let currentId = null;
+let controller = null;       // active fetch abort controller
 
 const EXAMPLES = [
-  "Explain quantum entanglement to a 10-year-old",
-  "Write a haiku about the second law of thermodynamics",
-  "Give me a Python function to check if a number is prime",
-  "Why is the sky blue? Keep it short.",
+  { k:"Explain a concept", d:"What is quantum entanglement? Explain simply.", p:"Explain quantum entanglement like I'm 12, in a short paragraph." },
+  { k:"Write code", d:"A Python function to check for primes", p:"Write a well-commented Python function that checks if a number is prime." },
+  { k:"Brainstorm", d:"Fun weekend project ideas", d2:"", p:"Give me 5 fun weekend coding project ideas for a beginner." },
+  { k:"Get creative", d:"A haiku about the cosmos", p:"Write a beautiful haiku about stars and deep space." },
 ];
-const exWrap = $("#examples");
-EXAMPLES.forEach(t => {
-  const b = document.createElement("div");
-  b.className = "ex"; b.textContent = t;
-  b.onclick = () => { input.value = t; sendMsg(); };
-  exWrap.appendChild(b);
-});
 
-input.addEventListener("input", () => {
-  input.style.height = "auto";
-  input.style.height = Math.min(input.scrollHeight, 180) + "px";
-});
-input.addEventListener("keydown", e => {
-  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMsg(); }
-});
-send.onclick = sendMsg;
-$("#clear").onclick = () => {
-  messages.length = 0;
-  feed.querySelectorAll(".msg,.stat").forEach(n => n.remove());
-  $("#empty")?.style.removeProperty("display");
-};
+/* ---------- persistence ---------- */
+function load(){ try{ return JSON.parse(localStorage.getItem(KEY)) || []; }catch{ return []; } }
+function save(){ localStorage.setItem(KEY, JSON.stringify(chats)); }
 
-function addMsg(role, initial=""){
-  $("#empty") && ($("#empty").style.display = "none");
-  const wrap = document.createElement("div");
-  wrap.className = "msg " + (role === "user" ? "user" : "bot");
-  wrap.innerHTML = `<div class="avatar">${role === "user" ? "You" : "Q"}</div>
-    <div style="flex:1"><div class="role">${role === "user" ? "You" : "Qwen 2.5 7B"}</div>
-    <div class="bubble"></div></div>`;
-  feed.appendChild(wrap);
-  const bubble = wrap.querySelector(".bubble");
-  bubble.innerHTML = render(initial);
-  feed.scrollTop = feed.scrollHeight;
-  return bubble;
+function current(){ return chats.find(c => c.id === currentId); }
+
+function newChat(){
+  currentId = null;
+  renderSidebar(); renderThread();
+  input.focus(); closeSidebarMobile();
 }
 
+function ensureChat(firstMsg){
+  if(current()) return current();
+  const c = { id: Date.now()+"-"+Math.floor(Math.random()*1e4),
+    title: firstMsg.slice(0,42) + (firstMsg.length>42?"…":""),
+    messages: [], updated: Date.now() };
+  chats.unshift(c); currentId = c.id; return c;
+}
+
+function switchChat(id){ currentId = id; renderSidebar(); renderThread(); closeSidebarMobile(); }
+function deleteChat(id, ev){
+  ev.stopPropagation();
+  chats = chats.filter(c => c.id !== id);
+  if(currentId === id) currentId = null;
+  save(); renderSidebar(); renderThread();
+}
+
+/* ---------- sidebar ---------- */
+function renderSidebar(){
+  sblist.innerHTML = "";
+  if(!chats.length){ sblist.innerHTML = '<div class="sb-cat">No conversations yet</div>'; return; }
+  sblist.insertAdjacentHTML("beforeend", '<div class="sb-cat">Recent</div>');
+  chats.forEach(c => {
+    const d = document.createElement("div");
+    d.className = "chatitem" + (c.id===currentId?" active":"");
+    d.innerHTML = `<span class="ic">💬</span><span class="tt"></span>
+      <button class="del" title="Delete">🗑</button>`;
+    d.querySelector(".tt").textContent = c.title;
+    d.onclick = () => switchChat(c.id);
+    d.querySelector(".del").onclick = (e) => deleteChat(c.id, e);
+    sblist.appendChild(d);
+  });
+}
+
+/* ---------- thread ---------- */
+function renderThread(){
+  const c = current();
+  $("#ttl").textContent = c ? c.title : "New chat";
+  feed.innerHTML = "";
+  if(!c || !c.messages.length){ renderWelcome(); return; }
+  const thread = document.createElement("div"); thread.className = "thread";
+  feed.appendChild(thread);
+  c.messages.forEach(m => addRow(m.role, m.content, thread));
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function renderWelcome(){
+  const w = document.createElement("div"); w.className = "welcome";
+  w.innerHTML = `<div class="big"></div>
+    <h1>How can I help you today?</h1>
+    <p>A 7-billion-parameter AI running privately on your Mac — no internet, no accounts, no data collected.</p>
+    <div class="cards"></div>`;
+  const cards = w.querySelector(".cards");
+  EXAMPLES.forEach(ex => {
+    const el = document.createElement("div"); el.className = "card";
+    el.innerHTML = `<div class="k">${ex.k}</div><div class="d">${ex.d}</div>`;
+    el.onclick = () => { input.value = ex.p; sendMsg(); };
+    cards.appendChild(el);
+  });
+  feed.appendChild(w);
+}
+
+function addRow(role, text, thread){
+  const row = document.createElement("div");
+  row.className = "row " + (role==="user"?"user":"bot");
+  row.innerHTML = `<div class="av">${role==="user"?"You":"Q"}</div>
+    <div class="body"><div class="name">${role==="user"?"You":"Qwen 2.5 7B"}</div>
+    <div class="bubble"></div></div>`;
+  row.querySelector(".bubble").innerHTML = render(text);
+  thread.appendChild(row);
+  return row.querySelector(".bubble");
+}
+
+/* ---------- send + stream ---------- */
 async function sendMsg(){
   const text = input.value.trim();
-  if (!text || send.disabled) return;
+  if(!text || controller) return;
   input.value = ""; input.style.height = "auto";
-  send.disabled = true;
 
-  messages.push({ role: "user", content: text });
-  addMsg("user", text);
+  const c = ensureChat(text);
+  c.messages.push({ role:"user", content:text });
+  c.updated = Date.now();
+  save(); renderSidebar();
 
-  const bubble = addMsg("assistant");
+  let thread = feed.querySelector(".thread");
+  if(!thread){ feed.innerHTML=""; thread=document.createElement("div"); thread.className="thread"; feed.appendChild(thread); }
+  addRow("user", text, thread);
+  const bubble = addRow("assistant", "", thread);
   bubble.innerHTML = '<span class="cursor"></span>';
-  let full = "";
+  feed.scrollTop = feed.scrollHeight;
 
-  try {
+  setGenerating(true);
+  let full = "";
+  controller = new AbortController();
+  try{
     const res = await fetch("/chat", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages })
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ messages: c.messages }), signal: controller.signal
     });
-    const reader = res.body.getReader();
-    const dec = new TextDecoder();
-    let buf = "", stats = null;
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buf += dec.decode(value, { stream: true });
+    const reader = res.body.getReader(); const dec = new TextDecoder();
+    let buf="", stats=null, stick=true;
+    feed.onscroll = () => { stick = feed.scrollTop + feed.clientHeight >= feed.scrollHeight - 40; };
+    while(true){
+      const { done, value } = await reader.read(); if(done) break;
+      buf += dec.decode(value,{stream:true});
       let nl;
-      while ((nl = buf.indexOf("\n")) >= 0) {
-        const line = buf.slice(0, nl).trim(); buf = buf.slice(nl + 1);
-        if (!line) continue;
-        const obj = JSON.parse(line);
-        if (obj.message?.content) {
-          full += obj.message.content;
+      while((nl=buf.indexOf("\n"))>=0){
+        const line = buf.slice(0,nl).trim(); buf = buf.slice(nl+1);
+        if(!line) continue;
+        const o = JSON.parse(line);
+        if(o.message?.content){ full += o.message.content;
           bubble.innerHTML = render(full) + '<span class="cursor"></span>';
-          feed.scrollTop = feed.scrollHeight;
-        }
-        if (obj.done) stats = obj;
+          if(stick) feed.scrollTop = feed.scrollHeight; }
+        if(o.done) stats = o;
       }
     }
     bubble.innerHTML = render(full);
-    messages.push({ role: "assistant", content: full });
-    if (stats && stats.eval_count) showStat(bubble, stats);
-  } catch (e) {
-    bubble.innerHTML = render("⚠ Couldn't reach the model.\n\n" + e +
-      "\n\nIs the server running? (python3 chat_server.py) Is Ollama up?");
-  } finally {
-    send.disabled = false;
-    input.focus();
+    if(stats && stats.eval_count){
+      const tps = stats.eval_count/(stats.eval_duration/1e9);
+      const s = document.createElement("div"); s.className="stat";
+      s.textContent = `${stats.eval_count} tokens · ${tps.toFixed(1)} tok/s on your M1`;
+      bubble.after(s);
+    }
+    c.messages.push({ role:"assistant", content: full }); save();
+  }catch(e){
+    if(e.name === "AbortError"){ bubble.innerHTML = render(full || "_(stopped)_");
+      if(full) c.messages.push({ role:"assistant", content: full }); save(); }
+    else bubble.innerHTML = render("⚠ Couldn't reach the model.\n\nMake sure the server is running (`python3 chat_server.py`) and Ollama is up.\n\n"+e);
+  }finally{
+    controller = null; setGenerating(false); input.focus();
   }
 }
 
-function showStat(bubble, s){
-  const tps = s.eval_count / (s.eval_duration / 1e9);
-  const stat = document.createElement("div");
-  stat.className = "stat";
-  stat.textContent = `${s.eval_count} tokens · ${tps.toFixed(1)} tok/s on your M1`;
-  bubble.closest(".msg").after(stat);
+function setGenerating(on){
+  if(on){ send.classList.add("stop"); send.textContent="◼"; send.disabled=false; send.title="Stop"; send.onclick=()=>controller&&controller.abort(); }
+  else { send.classList.remove("stop"); send.textContent="↑"; send.disabled=false; send.title="Send"; send.onclick=sendMsg; }
 }
 
-// tiny, safe markdown: escape first, then code fences, inline code, bold, paragraphs
+/* ---------- markdown (safe) ---------- */
 function render(t){
   let h = t.replace(/[&<>]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;" }[c]));
-  h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c.replace(/\n$/,"")}</code></pre>`);
+  h = h.replace(/```(\w*)\n?([\s\S]*?)```/g, (_,l,c)=>
+    `<pre><button class="copy">copy</button><code>${c.replace(/\n$/,"")}</code></pre>`);
   h = h.replace(/`([^`]+)`/g, "<code>$1</code>");
   h = h.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-  h = h.split(/\n{2,}/).map(p =>
-    p.includes("<pre>") ? p : "<p>" + p.replace(/\n/g, "<br>") + "</p>").join("");
+  h = h.replace(/^\s*[-*] (.+)$/gm, "• $1");
+  h = h.split(/\n{2,}/).map(p => p.includes("<pre>")?p:"<p>"+p.replace(/\n/g,"<br>")+"</p>").join("");
   return h;
 }
+feed.addEventListener("click", e => {
+  if(e.target.classList.contains("copy")){
+    const code = e.target.parentElement.querySelector("code").innerText;
+    navigator.clipboard.writeText(code);
+    e.target.textContent = "copied!"; setTimeout(()=>e.target.textContent="copy", 1200);
+  }
+});
+
+/* ---------- composer + nav ---------- */
+input.addEventListener("input", () => { input.style.height="auto"; input.style.height=Math.min(input.scrollHeight,200)+"px"; });
+input.addEventListener("keydown", e => { if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); sendMsg(); } });
+send.onclick = sendMsg;
+$("#newchat").onclick = newChat;
+$("#hamb").onclick = () => { $("#sidebar").classList.toggle("open"); $("#backdrop").classList.toggle("show"); };
+$("#backdrop").onclick = closeSidebarMobile;
+function closeSidebarMobile(){ $("#sidebar").classList.remove("open"); $("#backdrop").classList.remove("show"); }
+
+renderSidebar(); renderThread();
+
+/* ---------- starfield ---------- */
+const sc = $("#stars"), sx = sc.getContext("2d");
+let stars=[], shooting=null, tt=0;
+function resize(){ sc.width=innerWidth; sc.height=innerHeight;
+  const n = Math.min(240, Math.floor(innerWidth*innerHeight/7000));
+  stars = Array.from({length:n}, () => ({
+    x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+    z:Math.random(), r:Math.random()*1.3+.2,
+    tw:Math.random()*Math.PI*2, sp:Math.random()*.9+.15 })); }
+resize(); addEventListener("resize", resize);
+function sky(){
+  tt += 0.016; sx.clearRect(0,0,sc.width,sc.height);
+  for(const s of stars){
+    s.y += s.sp*(.15+s.z*.35); if(s.y>sc.height){ s.y=0; s.x=Math.random()*sc.width; }
+    const a = .35 + .65*Math.abs(Math.sin(s.tw + tt*(.6+s.z)));
+    sx.globalAlpha = a*(.4+s.z*.6);
+    sx.fillStyle = s.z>.85 ? "#cbd9ff" : "#eaf0ff";
+    sx.beginPath(); sx.arc(s.x, s.y, s.r*(.6+s.z), 0, 7); sx.fill();
+  }
+  if(!shooting && Math.random()<0.004){
+    shooting = { x:Math.random()*sc.width*.7, y:Math.random()*sc.height*.4, life:0,
+      vx:5+Math.random()*4, vy:2+Math.random()*2 };
+  }
+  if(shooting){
+    const s=shooting; s.life++;
+    const grad = sx.createLinearGradient(s.x,s.y,s.x-s.vx*9,s.y-s.vy*9);
+    grad.addColorStop(0,"rgba(180,200,255,.9)"); grad.addColorStop(1,"rgba(180,200,255,0)");
+    sx.globalAlpha=1; sx.strokeStyle=grad; sx.lineWidth=2; sx.beginPath();
+    sx.moveTo(s.x,s.y); sx.lineTo(s.x-s.vx*9,s.y-s.vy*9); sx.stroke();
+    s.x+=s.vx; s.y+=s.vy; if(s.life>60||s.x>sc.width||s.y>sc.height) shooting=null;
+  }
+  requestAnimationFrame(sky);
+}
+sky();
 </script>
 </body>
 </html>

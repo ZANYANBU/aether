@@ -12,11 +12,15 @@ model?" experiment. The answer: surprisingly far. The UI shows a live
 
 ## ✨ Features
 
+- **ChatGPT-style interface** — clean, familiar, and easy for anyone to use
+- **Animated dark-space theme** — twinkling starfield + shooting stars
+- **Saved chat history** — conversations persist in your browser (localStorage); switch between them in the sidebar
 - **Fully local & offline** — runs on [Ollama](https://ollama.com); nothing leaves your machine
-- **Streaming replies** — tokens render live as the model types
+- **Streaming replies** — tokens render live as the model types, with a **Stop** button
 - **Live tok/s meter** — see exactly how fast your hardware is
 - **Multi-turn memory** — real back-and-forth conversation
-- **Code-block + markdown** rendering
+- **Code blocks with one-click copy** + markdown rendering
+- **Mobile-friendly** — collapsible sidebar
 - **Zero Python dependencies** — the server is ~90 lines of Python standard library
 - **One HTML file** — no build step, no npm, no framework
 
