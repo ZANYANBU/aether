@@ -1,5 +1,10 @@
 # ✦ Aether — private, local AI for everyone
 
+[![CI](https://github.com/ZANYANBU/aether/actions/workflows/ci.yml/badge.svg)](https://github.com/ZANYANBU/aether/actions/workflows/ci.yml)
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![No dependencies](https://img.shields.io/badge/dependencies-none-2ea44f)](chat_server.py)
+[![MIT licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
+
 *Like the invisible medium once thought to fill all of space — an intelligence that runs quietly, everywhere, on your own machine.*
 
 A clean, friendly chat interface for running AI **entirely on your own computer**.
@@ -156,6 +161,7 @@ uses your browser's built-in voices. Every part runs on your machine.
 | [`chat_server.py`](chat_server.py) | The whole backend: serves the page, lists your models, relays chat, transcribes voice. Pure Python standard library. |
 | [`index.html`](index.html) | The entire app — chat, model picker, vision, voice, and Live mode — in one file. |
 | [`run.sh`](run.sh) | One-command launcher (starts Ollama, pulls models, opens the app). |
+| [`tests/`](tests/) | Tests for the server. Standard library only, no Ollama needed. |
 
 ---
 
@@ -194,6 +200,17 @@ This app makes **no outbound internet connections** while you use it. Your chats
 stored only in your own browser (`localStorage`) and can be deleted anytime. Models,
 transcription, and speech all run locally. The only time anything is downloaded is the
 one-time model pull from Ollama during setup.
+
+---
+
+## 🤝 Contributing
+
+Bug reports, ideas and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Run the tests with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
 
 ---
 
