@@ -5,6 +5,8 @@
 [![No dependencies](https://img.shields.io/badge/dependencies-none-2ea44f)](chat_server.py)
 [![MIT licence](https://img.shields.io/badge/licence-MIT-blue)](LICENSE)
 
+**[Website](https://zanyanbu.github.io/aether/)**
+
 *Like the invisible medium once thought to fill all of space — an intelligence that runs quietly, everywhere, on your own machine.*
 
 A clean, friendly chat interface for running AI **entirely on your own computer**.

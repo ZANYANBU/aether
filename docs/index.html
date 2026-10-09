@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aether · private AI chat on your own machine</title>
+  <meta name="description" content="A clean chat interface for any Ollama model, with image understanding and hands-free voice. Nothing you type, say or show it leaves your device.">
+  <meta property="og:title" content="Aether · private AI chat on your own machine">
+  <meta property="og:description" content="A clean chat interface for any Ollama model, with image understanding and hands-free voice. Nothing you type, say or show it leaves your device.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a855f7'/%3E%3Ccircle cx='32' cy='32' r='12' fill='%23fff'/%3E%3C/svg%3E">
+  <style>
+    :root { --bg:#0e0e10; --panel:#17171a; --line:#2a2a2f; --text:#f5f5f7; --muted:#a1a1a6; --accent:#a855f7; --radius:14px; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--text); font:17px/1.6 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Arial,sans-serif; -webkit-font-smoothing:antialiased; }
+    a { color:var(--accent); text-decoration:none; }
+    a:hover { text-decoration:underline; }
+    .wrap { max-width:1080px; margin:0 auto; padding:0 20px; }
+    header { padding:22px 0; display:flex; align-items:center; justify-content:space-between; }
+    .brand { font-weight:700; font-size:1.1rem; color:var(--text); }
+    .nav a { color:var(--muted); margin-left:22px; font-size:.95rem; }
+    .hero { text-align:center; padding:56px 0 28px; }
+    h1 { font-size:clamp(2.2rem,6vw,3.8rem); line-height:1.08; letter-spacing:-.02em; margin:0 0 .45em; }
+    h1 span { color:var(--accent); }
+    .lede { color:var(--muted); font-size:1.2rem; max-width:42ch; margin:0 auto 1.6em; }
+    .actions { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; }
+    .btn { display:inline-block; padding:.8em 1.5em; border-radius:999px; font-weight:600; border:1px solid var(--line); color:var(--text); background:var(--panel); }
+    .btn:hover { text-decoration:none; border-color:#3a3a40; }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .btn.primary:hover { filter:brightness(.92); }
+    .fine { color:var(--muted); font-size:.9rem; margin-top:1em; }
+    .shot { display:block; width:100%; height:auto; border-radius:var(--radius); border:1px solid var(--line); box-shadow:0 30px 80px rgba(0,0,0,.5); background:#000; }
+    .hero .shot { margin:44px auto 0; max-width:100%; }
+    section { padding:64px 0; border-top:1px solid var(--line); }
+    h2 { font-size:clamp(1.6rem,3.6vw,2.3rem); line-height:1.15; letter-spacing:-.01em; margin:0 0 .5em; }
+    .feature { display:grid; grid-template-columns:1fr 1.5fr; gap:40px; align-items:center; }
+    .feature.flip > div:first-child { order:2; }
+    .feature p { color:var(--muted); margin:0 0 1em; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:14px; margin-top:28px; padding:0; list-style:none; }
+    .grid li { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; }
+    .grid strong { display:block; margin-bottom:.2em; }
+    .grid span { color:var(--muted); font-size:.95rem; }
+    .install { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:26px 28px; }
+    .install ol { margin:0 0 1em; padding-left:1.2em; }
+    .install li { margin-bottom:.5em; }
+    code { background:#222226; border:1px solid var(--line); border-radius:6px; padding:.1em .4em; font-size:.88em; }
+    pre { background:#101013; border:1px solid var(--line); border-radius:10px; padding:14px 16px; overflow-x:auto; margin:.6em 0; }
+    pre code { background:none; border:0; padding:0; }
+    footer { padding:40px 0 56px; color:var(--muted); font-size:.9rem; text-align:center; border-top:1px solid var(--line); }
+    @media (max-width:800px) { .feature { grid-template-columns:1fr; gap:22px; } .feature.flip > div:first-child { order:0; } .nav a:not(:last-child) { display:none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="#top">Aether</a>
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#install">Install</a>
+        <a href="https://github.com/ZANYANBU/aether">GitHub</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <div class="hero">
+        <h1>Private AI chat,<br><span>on your own machine.</span></h1>
+        <p class="lede">A clean chat interface for any Ollama model. Text, images and hands-free voice, and nothing leaves your device.</p>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/ZANYANBU/aether">Get it on GitHub</a>
+          <a class="btn" href="https://github.com/ZANYANBU/aether">View the source</a>
+        </div>
+        <p class="fine">macOS, Windows or Linux · Python 3 and Ollama · MIT licence</p>
+        <img class="shot" src="screenshot.png" alt="The Aether welcome screen with a model picker and a message box">
+      </div>
+
+      <section>
+        <div class="feature">
+          <div>
+            <h2>It can see</h2>
+            <p>Attach, paste or drag in a picture and ask about it. Aether switches to a vision model on its own, then back again.</p>
+          </div>
+          <img class="shot" src="vision.png" alt="Aether describing an attached image" loading="lazy">
+        </div>
+      </section>
+
+      <section>
+        <div class="feature flip">
+          <div>
+            <h2>Just talk to it</h2>
+            <p>Live mode is a hands-free conversation: it hears when you stop, answers out loud, then listens again. Talk over it to interrupt.</p>
+          </div>
+          <img class="shot" src="live.png" alt="Live voice mode" loading="lazy">
+        </div>
+      </section>
+
+      <section>
+        <div class="feature">
+          <div>
+            <h2>A chat that feels finished</h2>
+            <p>Replies stream in with a live speed meter, code blocks have one-click copy, and your conversations stay in a sidebar in your own browser.</p>
+          </div>
+          <img class="shot" src="chat.png" alt="A conversation in Aether with a code block" loading="lazy">
+        </div>
+      </section>
+
+      <section id="features">
+        <h2>And the rest</h2>
+        <ul class="grid">
+          <li><strong>Any model you have</strong><span>Qwen, Llama, Mistral, Gemma and more. Swap from a dropdown, no restart.</span></li>
+          <li><strong>No dependencies</strong><span>The whole server is one short Python file using only the standard library.</span></li>
+          <li><strong>No cloud, no keys</strong><span>No sign-up and no API key. It talks to the Ollama on your machine and nothing else.</span></li>
+          <li><strong>Reads replies aloud</strong><span>Using your computer's built-in voices.</span></li>
+          <li><strong>Speech stays local</strong><span>Optional voice input is transcribed on your device with Whisper.</span></li>
+          <li><strong>Works on your phone</strong><span>Open it from a phone or tablet on the same network.</span></li>
+        </ul>
+      </section>
+
+      <section id="install">
+        <h2>Install</h2>
+        <div class="install">
+          <ol>
+            <li>Install <a href="https://ollama.com/download">Ollama</a> and pull a model:
+              <pre><code>ollama pull qwen2.5:7b</code></pre></li>
+            <li>Get Aether and start it:
+              <pre><code>git clone https://github.com/ZANYANBU/aether.git
+cd aether
+./run.sh</code></pre></li>
+            <li>Open <code>http://localhost:8100</code> and pick your model.</li>
+          </ol>
+          <p class="fine">Want it to understand images? Also run <code>ollama pull qwen2.5vl:3b</code>. Voice input is optional and needs <code>faster-whisper</code>; the <a href="https://github.com/ZANYANBU/aether#readme">README</a> has the steps.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      Made by <a href="https://github.com/ZANYANBU">V. Anbuchelvan</a> · MIT licence ·
+      <a href="https://github.com/ZANYANBU/aether/issues">Report a problem</a>
+    </footer>
+  </div>
+</body>
+</html>
